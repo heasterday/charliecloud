@@ -85,6 +85,6 @@ Unpack an image tarball into a directory.
 ch-test
 +++++++
 
-FIXME
+Run the Charliecloud test suite.
 
 .. include:: ./ch-test_desc.rst

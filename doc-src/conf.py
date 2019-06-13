@@ -244,6 +244,8 @@ man_pages = [
      [u'Reid Priedhorsky, Tim Randles, and others'], 1),
     ('ch-tar2dir', 'ch-tar2dir', u'Unpack an image tarball into a directory',
      [u'Reid Priedhorsky, Tim Randles, and others'], 1)
+    ('ch-test', 'ch-test', u'Run the Charliecloud test suite',
+     [u'Reid Priedhorsky, Tim Randles, and others'], 1)
 ]
 
 # If true, show URL addresses after external links.
