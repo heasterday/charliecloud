@@ -104,14 +104,15 @@ ifneq ($(shell echo "$(PREFIX)" | cut -c1),/)
   $(warning Relative PREFIX converted to $(PREFIX))
 endif
 endif
+VERSION := $(shell cat VERSION.full)
 INSTALL_PREFIX := $(if $(DESTDIR),$(DESTDIR)/$(PREFIX),$(PREFIX))
 BIN := $(INSTALL_PREFIX)/bin
-DOC := $(INSTALL_PREFIX)/share/doc/charliecloud
+DOCDIR ?= $(INSTALL_PREFIX)/share/doc/charliecloud-$(VERSION)
 # LIBEXEC_DIR is modeled after FHS 3.0 and
 # https://www.gnu.org/prep/standards/html_node/Directory-Variables.html. It
 # contains any executable helpers that are not needed in PATH. Default is
 # libexec/charliecloud which will be preprended with the PREFIX.
-LIBEXEC_DIR ?= libexec/charliecloud
+LIBEXEC_DIR ?= libexec/charliecloud-$(VERSION)
 LIBEXEC_INST := $(INSTALL_PREFIX)/$(LIBEXEC_DIR)
 LIBEXEC_RUN := $(PREFIX)/$(LIBEXEC_DIR)
 TEST := $(LIBEXEC_INST)/test
@@ -137,16 +138,16 @@ install: all
 	    install -pm 644 -t $(INSTALL_PREFIX)/share/man/man1 man/*.1; \
 	fi
 #       license and readme
-	install -d $(DOC)
-	install -pm 644 -t $(DOC) LICENSE README.rst
+	install -d $(DOCDIR)
+	install -pm 644 -t $(DOCDIR) LICENSE README.rst
 #	html files if they were built
 	if [ -f doc/index.html ]; then \
-		cp -r doc $(DOC)/html; \
-		rm -f $(DOC)/html/.nojekyll; \
-		for i in $$(find $(DOC)/html -type d); do \
+		cp -r doc $(DOCDIR)/html; \
+		rm -f $(DOCDIR)/html/.nojekyll; \
+		for i in $$(find $(DOCDIR)/html -type d); do \
 			chmod 755 $$i; \
 		done; \
-		for i in $$(find $(DOC)/html -type f); do \
+		for i in $$(find $(DOCDIR)/html -type f); do \
 			chmod 644 $$i; \
 		done; \
 	fi
@@ -168,7 +169,9 @@ install: all
 	install -pm 755 -t $(TEST) test/Build.*
 	install -pm 644 -t $(TEST) test/Dockerfile.* test/Docker_Pull.*
 	install -pm 644 -t $(TEST) test/*.patch
-	install -pm 755 -t $(TEST) test/make-auto test/make-perms-test
+	install -pm 755 -t $(TEST) test/docs-sane \
+                                   test/make-auto \
+                                   test/make-perms-test
 	install -d $(TEST)/chtest
 	install -pm 644 -t $(TEST)/chtest test/chtest/*
 	chmod 755 $(TEST)/chtest/Build \
@@ -180,6 +183,7 @@ install: all
 	install -pm 755 -t $(TEST)/sotest test/sotest/libsotest.so.1.0 \
 	                                  test/sotest/sotest
 	install -pm 644 -t $(TEST)/sotest test/sotest/files_inferrable.txt \
+	                                  test/sotest/libsotest.c \
 	                                  test/sotest/sotest.c
 	ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so
 	ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so.1
