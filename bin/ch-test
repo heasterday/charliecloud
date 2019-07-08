@@ -4,19 +4,43 @@ libexec="$(cd "$(dirname "$0")" && pwd)"
 . "${libexec}/base.sh"
 . "${libexec}/version.sh"
 
+# shellcheck disable=SC2034
+usage=$(cat <<EOF
+Run the Charliecloud test suite.
+
+Usage:
+
+  $ $(basename "$0") [ARGS ...] PHASE
+
+You must have the charliecloud test suite installed.
+EOF
+)
+
+parse_basic_args "$@"
+
+if [ "$#" -lt 1 ]; then
+    usage
+fi
+
 set_vars () {
     [[ -n $prefix ]]           || prefix=/var/tmp
     [[ -n $scope ]]            || scope=standard
-    [[ -n $CH_TEST_TARDIR ]]   || CH_TEST_TARDIR=${prefix}/tar
-    [[ -n $CH_TEST_IMGDIR ]]   || CH_TEST_IMGDIR=${prefix}/img
-    [[ -n $CH_TEST_SCOPE ]]    || CH_TEST_SCOPE=$scope
-    [[ -n $CH_TEST_PERMDIRS ]] || CH_TEST_PERMDIRS='/var/tmp /tmp'
-    [[ -d $CH_TEST_TARDIR ]]   || mkdir -p "$CH_TEST_TARDIR"
-    [[ -d $CH_TEST_IMGDIR ]]   || mkdir -p "$CH_TEST_IMGDIR"
-    export CH_TEST_TARDIR=$CH_TEST_TARDIR
-    export CH_TEST_IMGDIR=$CH_TEST_IMGDIR
-    export CH_TEST_SCOPE=$CH_TEST_SCOPE
-    export CH_TEST_PERMDIRS=$CH_TEST_PERMDIRS
+    [[ -n $CH_TEST_TARDIR ]]   || export CH_TEST_TARDIR=${prefix}/tar
+    [[ -n $CH_TEST_IMGDIR ]]   || export CH_TEST_IMGDIR=${prefix}/dir
+    [[ -n $CH_TEST_SCOPE ]]    || export CH_TEST_SCOPE=$scope
+
+    if [[ -z $CH_TEST_PERMDIRS ]]; then
+        if [[ $prefix == /var/tmp ]]; then
+            export CH_TEST_PERMDIRS="/var/tmp /tmp" # default
+        else
+            export CH_TEST_PERMDIRS="$prefix"
+        fi
+    fi
+
+    if [[ -z $summary ]]; then
+        [[ -d $CH_TEST_TARDIR ]]   || mkdir -p "$CH_TEST_TARDIR"
+        [[ -d $CH_TEST_IMGDIR ]]   || mkdir -p "$CH_TEST_IMGDIR"
+    fi
 }
 
 fatal () {
@@ -31,8 +55,6 @@ perm_dirs () {
             # prevent the test suite from failing if the perm_dirs directory
             # exists
             [[ ! -d "${d}/perm_dirs" ]] || rm -rf "${d}/perm_dirs"
-        else
-            mkdir -p "$d"
         fi
     done
     for d in $CH_TEST_PERMDIRS; do
@@ -45,21 +67,33 @@ print_info () {
     printf 'CH_TEST_SCOPE           %s\n' "$CH_TEST_SCOPE"
     printf 'CH_TEST_TARDIR          %s\n' "$CH_TEST_TARDIR"
     printf 'CH_TEST_IMGDIR          %s\n' "$CH_TEST_IMGDIR"
-    printf 'CH_TEST_PERMDIRS        %s\n' "${CH_TEST_PERMDIRS[@]}"
+    echo "CH_TEST_PERMDIRS        ${CH_TEST_PERMDIRS[@]}"
 }
 
 topdir=${ch_bin%/bin}
 version=$(version 2>&1)
 
 # Determine test directory
+# local install
 if [[ -d "${topdir}/test" ]]; then
-    testdir=${topdir}/test  #local install
-else
-    testdir=${topdir}/libexec/charliecloud-${version} #prefix install
+    testdir=${topdir}/test
+
+# prefix installation
+elif [[ -d ${topdir}/libexec/charliecloud-${version} ]]; then
+    testdir=${topdir}/libexec/charliecloud-${version}
+
+# If you run ch-test with `./bin/ch-run` while your PWD is charliecloud/test,
+# the symlink from bin to ../../../bin messes with the ch_bin variable from
+# base.sh. We check if we are inside the test directory to avoid this.
+elif [[ ${PWD##*/} == test ]] \
+    && [[ -d run ]] \
+    && [[ -e make-auto ]]; then
+    testdir=$PWD
 fi
 
+cd "$testdir" || fatal 'cannot cd into the test directory'
+
 # Parse arguments
-parse_basic_args "$@"
 while [[ $# -gt 0 ]]; do
     opt=$1; shift
     case $opt in
@@ -78,11 +112,14 @@ while [[ $# -gt 0 ]]; do
     ;;
     -s|--scope=*)
         [[ -z $scope ]] || fatal 'scope: assigned more than once'
-        if [[ $opt = '--scope' ]]; then
+        if [[ $opt = '--scope='* ]]; then
             scope=${opt##*=}  # remove '--scope='
         else
             scope=$1; shift
         fi
+    ;;
+    --summary)
+        summary=true
     ;;
     *)
         fatal "unrecognized argument: $opt"
@@ -90,8 +127,25 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Sanity check
-cd "$testdir"   || fatal 'test directory not found (did you install the charliecloud-test package?'
+if [[ ! -d $testdir ]]; then
+    notest=$(cat << EOF
+Unable to locate the Charliecloud test suite. This is usually due to the
+following:
+
+    1. No suitable python version was detected during make install; or
+    2. Charliecloud was installed via yum (epel) without the test package
+       (yum install charliecloud-test)
+EOF
+)
+    fatal "$notest"
+fi
 [[ -n $phase ]] || fatal 'test phase not specified'
+
+if [[ $summary == true ]]; then
+    set_vars
+    print_info
+    exit 0
+fi
 
 # Execute phase
 case $phase in

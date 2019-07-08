@@ -44,6 +44,9 @@ Other arguments:
     Run tests with given scope. Default: :code:`$CH_TEST_SCOPE` if set,
     otherwise :code:`standard`.
 
+  :code:`--summary`
+    Print the test suite variables or clearn targets without executing phase.
+
 Storage
 =======
 
