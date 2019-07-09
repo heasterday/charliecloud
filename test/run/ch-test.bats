@@ -1,6 +1,7 @@
 load ../common
 
 unset_vars () {
+    # Save the original CH_TEST environment variables.
     [[ -n $tardir ]] || tardir=$CH_TEST_TARDIR
     [[ -n $imgdir ]] || imgdir=$CH_TEST_IMGDIR
     [[ -n $scope ]] || scope=$CH_TEST_SCOPE
@@ -19,9 +20,17 @@ set_vars () {
 }
 
 test () {
-    testdir="${ch_bin#%/bin}/test"
-    # Environment variables already set
+
+    # Ensure the interactions between ch-test and set CH_TEST_* environment
+    # variables function as intended, i.e., ch-test always prioritizes a set
+    # CH_TEST_* variable over a value specified with an argument, e.g., --scope,
+    # --prefix, etc.
+
+    testdir="${ch_bin/\/bin}/test"
+
+    # Environment variables set, no arguments
     expected_out=$(cat << EOF
+
 running tests from:     $testdir
 CH_TEST_SCOPE           quick
 CH_TEST_TARDIR          /tmp/tar
@@ -34,12 +43,14 @@ EOF
     export CH_TEST_IMGDIR=/tmp/img
     export CH_TEST_SCOPE=quick
     export CH_TEST_PERMDIRS='/tmp /var/tmp'
-    run ch-test $1 --summary
-    echo "$output"
-    diff -u "$output" "$expected_out"
+    ch-test $1 --summary > output.out
+    echo "$expected_out" > expected.out
+    diff -u output.out expected.out
+    rm output.out expected.out
 
-    # No environment variables
+    # No environment variables, no arguments
     expected_out=$(cat << EOF
+
 running tests from:     $testdir
 CH_TEST_SCOPE           standard
 CH_TEST_TARDIR          /var/tmp/tar
@@ -47,12 +58,20 @@ CH_TEST_IMGDIR          /var/tmp/dir
 CH_TEST_PERMDIRS        /var/tmp /tmp
 EOF
 )
-    run ch-test $1 --summary
-    echo "$output"
-    diff -u "$output" "$expected_out"
+    unset_vars
+    ch-test $1 --summary > output.out
+    echo "$expected_out" > expected.out
+    diff -u output.out expected.out
+    rm output.out expected.out
 
-    # Environment variables with --prefix
+
+    # Environment variables set, --prefix argument
     expected_out=$(cat << EOF
+prefix: warning: CH_TEST_TARDIR set and will be used
+prefix: warning: CH_TEST_IMGDIR set and will be used
+prefix: warning: CH_TEST_PERMDIRS set and will be used
+prefix: warning: CH_TEST_SCOPE set and will be used
+
 running tests from:     $testdir
 CH_TEST_SCOPE           standard
 CH_TEST_TARDIR          /var/tmp/tar
@@ -60,15 +79,21 @@ CH_TEST_IMGDIR          /var/tmp/dir
 CH_TEST_PERMDIRS        /var/tmp /tmp
 EOF
 )
-    run ch-test --prefix=/tmp/foo --summary $1
+    export CH_TEST_TARDIR=/var/tmp/tar
+    export CH_TEST_IMGDIR=/var/tmp/dir
+    export CH_TEST_SCOPE=standard
+    export CH_TEST_PERMDIRS='/var/tmp /tmp'
+    ch-test --prefix=/tmp/foo --summary $1  > output.out
     echo "$output"
-    diff -u "$output" "$expected_out"
-    run ch-test -p /tmp/foo --summary $1
-    echo "$output"
-    diff -u "$output" "$expected_out"
+    ch-test -p /tmp/foo --summary $1
+    echo "$expected_out" > expected.out
+    diff -u output.out expected.out
+    rm output.out expected.out
 
-    # No environment with --prefix
+
+    # No environment variables, --prefix argument
     expected_out=$(cat << EOF
+
 running tests from:     $testdir
 CH_TEST_SCOPE           standard
 CH_TEST_TARDIR          /foo/bar/tar
@@ -76,16 +101,20 @@ CH_TEST_IMGDIR          /foo/bar/dir
 CH_TEST_PERMDIRS        /foo/bar
 EOF
 )
-    unset-vars
-    run ch-test --prefix=/foo/bar --summary $1
-    echo "$output"
-    diff -u "$output" "$expected_out"
-    run ch-test -p /tmp/foo --summary $1
-    echo "$output"
-    diff -u "$output" "$expected_out"
+    unset_vars
+    ch-test --prefix=/foo/bar --summary $1 > output.out
+    echo "$expected_out" > expected.out
+    diff -u output.out expected.out
 
-    # Environment with --scope
+    ch-test -p /foo/bar --summary $1 > output.out
+    echo "$expected_out" > expected.out
+    diff -u output.out expected.out
+    rm output.out expected.out
+
+
+    # Environment variable set, --scope argument
     expected_out=$(cat << EOF
+
 running tests from:     $testdir
 CH_TEST_SCOPE           quick
 CH_TEST_TARDIR          /foo/bar/tar
@@ -97,16 +126,18 @@ EOF
     export CH_TEST_IMGDIR=/foo/bar/dir
     export CH_TEST_SCOPE=quick
     export CH_TEST_PERMDIRS=skip
-    run ch-test --scope=full --summary $1
-    echo "$output"
-    diff -u "$output" "$expected_out"
-    run ch-test -s full --summary $1
-    echo "$output"
-    diff -u "$output" "$expected_out"
+    ch-test --scope=full --summary $1 > output.out
+    echo "$expected_out" > expected.out
+    diff -u output.out expected.out
 
+    ch-test -s full --summary $1 > output.out
+    echo "$expected_out" > expected.out
+    diff -u output.out expected.out
+    rm output.out expected.out
 
-    # No environment with --scope
+    # No environment variables, --scope argument
     expected_out=$(cat << EOF
+
 running tests from:     $testdir
 CH_TEST_SCOPE           full
 CH_TEST_TARDIR          /var/tmp/tar
@@ -115,17 +146,24 @@ CH_TEST_PERMDIRS        /var/tmp /tmp
 EOF
 )
     unset_vars
-    run ch-test --scope=full --summary $1
-    echo "$output"
-    diff -u "$output" "$expected_out"
-    run ch-test -s full --summary $1
-    echo "$output"
-    diff -u "$output" "$expected_out"
+    ch-test --scope=full --summary $1 > output.out
+    echo "$expected_out" > expected.out
+    diff -u output.out expected.out
 
-    # Environment with --scope and --prefix
+    ch-test -s full --summary $1 > exprected.out
+    echo "$expected_out" > expected.out
+    diff -u output.out expected.out
+    rm output.out expected.out
+
+    # Environment variables set, --scope and --prefix args
     expected_out=$(cat << EOF
+prefix: warning: CH_TEST_TARDIR set and will be used
+prefix: warning: CH_TEST_IMGDIR set and will be used
+prefix: warning: CH_TEST_PERMDIRS set and will be used
+prefix: warning: CH_TEST_SCOPE set and will be used
+
 running tests from:     $testdir
-CH_TEST_SCOPE           standard
+CH_TEST_SCOPE           quick
 CH_TEST_TARDIR          /var/tmp/tar
 CH_TEST_IMGDIR          /var/tmp/dir
 CH_TEST_PERMDIRS        /var/tmp /tmp
@@ -135,28 +173,40 @@ EOF
     export CH_TEST_IMGDIR=/var/tmp/dir
     export CH_TEST_SCOPE=quick
     export CH_TEST_PERMDIRS='/var/tmp /tmp'
-    run ch-test --scope=full --prefix=/foo/bar --summary $1
-    echo "$output"
-    diff -u "$output" "$expected_out"
-    run ch-test -s full --summary $1
-    echo "$output"
-    diff -u "$output" "$expected_out"
+    ch-test --scope=full --prefix=/foo/bar --summary $1 > output.out
+    echo "$expected_out" > expected.out
+    diff -u output.out expected.out
 
-    # No environment with --scope and --prefix
+    ch-test -s full -p /foo/bar --summary $1 > output.out
+    echo "$expected_out" > expected.out
+    diff -u output.out expected.out
+    rm output.out expected.out
+
+    # No environment variables, --scope and --prefix args
     expected_out=$(cat << EOF
-running tests from:     /$testdir
+
+running tests from:     $testdir
 CH_TEST_SCOPE           full
 CH_TEST_TARDIR          /foo/bar/tar
 CH_TEST_IMGDIR          /foo/bar/dir
 CH_TEST_PERMDIRS        /foo/bar
 EOF
 )
-    run ch-test --scope=full --prefix=/foo/bar --summary $1
+    unset_vars
+    ch-test --scope=full --prefix=/foo/bar --summary $1 > output.out
     echo "$output"
-    diff -u "$output" "$expected_out"
-    run ch-test -s full -p /foo/bar --summary $1
+    echo "$expected_out" > expected.out
+    diff -u output.out expected.out
+
+    ch-test -s full -p /foo/bar --summary $1 > output.out
     echo "$output"
-    diff -u "$output" "$expected_out"
+    echo "$expected_out" > expected.out
+    diff -u output.out expected.out
+    rm output.out expected.out
+
+    # Partial environment, no args
+
+    # Partial environment, --scope arg
 }
 
 @test 'ch-test build' {
@@ -168,16 +218,51 @@ EOF
 }
 
 @test 'ch-test errors' {
-    # Specify multiple phases
+    # No arguments
+    run ch-test
+    echo $output
+    [[ $output = *'Usage:'* ]]
+    [[ $status -eq 1 ]]
+
+    # No phase specified
+    run ch-test --prefix=foo
+    echo $output
+    [[ $output = *'test phase not specified'* ]]
+    [[ $status -eq 1 ]]
+    run ch-test -p foo -s full
+    echo $output
+    [[ $output = *'test phase not specified'* ]]
+    [[ $status -eq 1 ]]
+
+    # Multiple phases specified
     run ch-test build run
-    [[ ! $status = 0 ]]
+    echo $output
+    [[ $output = *'test phase may only be assigned once'* ]]
+    [[ $status -eq 1 ]]
     run ch-test build all
-    [[ ! $status = 0 ]]
+    echo $output
+    [[ $output = *'test phase may only be assigned once'* ]]
+    [[ $status -eq 1 ]]
     run ch-test all run
-    [[ ! $status = 0 ]]
+    echo $output
+    [[ $output = *'test phase may only be assigned once'* ]]
+    [[ $status -eq 1 ]]
     run ch-test build --prefix=/tmp run
-    [[ ! $status = 0 ]]
+    echo $output
+    [[ $output = *'test phase may only be assigned once'* ]]
+    [[ $status -eq 1 ]]
+
+    # Malformed arugments
+    run ch-test --prefix foo build
+    echo $output
+    [[ $status -eq 1 ]]
+    run ch-test --scope foo build
+    echo $output
+    [[ $status -eq 1 ]]
 }
 
 @test 'ch-test clean' {
+    run ch-test clean
+    echo $output
+    [[ $output = *''* ]]
 }
