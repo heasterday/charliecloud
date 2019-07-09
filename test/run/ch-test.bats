@@ -84,6 +84,7 @@ EOF
     export CH_TEST_SCOPE=standard
     export CH_TEST_PERMDIRS='/var/tmp /tmp'
     ch-test --prefix=/tmp/foo --summary "$1"  > output.out
+    echo "$expected_out" > expected.out
     diff -u output.out expected.out
     rm output.out expected.out
     ch-test -p /tmp/foo --summary "$1" > output.out
@@ -154,7 +155,7 @@ EOF
     diff -u output.out expected.out
     rm output.out expected.out
 
-    ch-test -s full --summary "$1" > expected.out
+    ch-test -s full --summary "$1" > output.out
     echo "$expected_out" > expected.out
     diff -u output.out expected.out
     rm output.out expected.out
@@ -223,6 +224,7 @@ EOF
     ch-test "$1" --summary > output.out
     echo "$expected_out" > expected.out
     diff -u output.out expected.out
+    rm output.out expected.out
 
     # Partial environment, --scope argument
     expected_out=$(cat << EOF
@@ -239,6 +241,7 @@ EOF
     ch-test "$1" --scope=full --summary > output.out
     echo "$expected_out" > expected.out
     diff -u output.out expected.out
+    rm output.out expected.out
 
     # Partial environment, --prefix argument
     expected_out=$(cat << EOF
@@ -256,6 +259,7 @@ EOF
     ch-test "$1" --prefix=/tmp --summary > output.out
     echo "$expected_out" > expected.out
     diff -u output.out expected.out
+    rm output.out expected.out
 
     # Partial environment, --prefix and --scope args
     expected_out=$(cat << EOF
@@ -273,6 +277,7 @@ EOF
     ch-test "$1" -p /tmp -s quick --summary > output.out
     echo "$expected_out" > expected.out
     diff -u output.out expected.out
+    rm output.out expected.out
 
     # Reset CH_TEST environment variables
     set_vars
