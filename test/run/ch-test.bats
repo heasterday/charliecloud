@@ -43,7 +43,7 @@ EOF
     export CH_TEST_IMGDIR=/tmp/img
     export CH_TEST_SCOPE=quick
     export CH_TEST_PERMDIRS='/tmp /var/tmp'
-    ch-test $1 --summary > output.out
+    ch-test "$1" --summary > output.out
     echo "$expected_out" > expected.out
     diff -u output.out expected.out
     rm output.out expected.out
@@ -59,7 +59,7 @@ CH_TEST_PERMDIRS        /var/tmp /tmp
 EOF
 )
     unset_vars
-    ch-test $1 --summary > output.out
+    ch-test "$1" --summary > output.out
     echo "$expected_out" > expected.out
     diff -u output.out expected.out
     rm output.out expected.out
@@ -83,9 +83,10 @@ EOF
     export CH_TEST_IMGDIR=/var/tmp/dir
     export CH_TEST_SCOPE=standard
     export CH_TEST_PERMDIRS='/var/tmp /tmp'
-    ch-test --prefix=/tmp/foo --summary $1  > output.out
-    echo "$output"
-    ch-test -p /tmp/foo --summary $1
+    ch-test --prefix=/tmp/foo --summary "$1"  > output.out
+    diff -u output.out expected.out
+    rm output.out expected.out
+    ch-test -p /tmp/foo --summary "$1" > output.out
     echo "$expected_out" > expected.out
     diff -u output.out expected.out
     rm output.out expected.out
@@ -102,11 +103,12 @@ CH_TEST_PERMDIRS        /foo/bar
 EOF
 )
     unset_vars
-    ch-test --prefix=/foo/bar --summary $1 > output.out
+    ch-test --prefix=/foo/bar --summary "$1" > output.out
     echo "$expected_out" > expected.out
     diff -u output.out expected.out
+    rm output.out expected.out
 
-    ch-test -p /foo/bar --summary $1 > output.out
+    ch-test -p /foo/bar --summary "$1" > output.out
     echo "$expected_out" > expected.out
     diff -u output.out expected.out
     rm output.out expected.out
@@ -126,11 +128,12 @@ EOF
     export CH_TEST_IMGDIR=/foo/bar/dir
     export CH_TEST_SCOPE=quick
     export CH_TEST_PERMDIRS=skip
-    ch-test --scope=full --summary $1 > output.out
+    ch-test --scope=full --summary "$1" > output.out
     echo "$expected_out" > expected.out
     diff -u output.out expected.out
+    rm output.out expected.out
 
-    ch-test -s full --summary $1 > output.out
+    ch-test -s full --summary "$1" > output.out
     echo "$expected_out" > expected.out
     diff -u output.out expected.out
     rm output.out expected.out
@@ -146,11 +149,12 @@ CH_TEST_PERMDIRS        /var/tmp /tmp
 EOF
 )
     unset_vars
-    ch-test --scope=full --summary $1 > output.out
+    ch-test --scope=full --summary "$1" > output.out
     echo "$expected_out" > expected.out
     diff -u output.out expected.out
+    rm output.out expected.out
 
-    ch-test -s full --summary $1 > exprected.out
+    ch-test -s full --summary "$1" > expected.out
     echo "$expected_out" > expected.out
     diff -u output.out expected.out
     rm output.out expected.out
@@ -173,11 +177,12 @@ EOF
     export CH_TEST_IMGDIR=/var/tmp/dir
     export CH_TEST_SCOPE=quick
     export CH_TEST_PERMDIRS='/var/tmp /tmp'
-    ch-test --scope=full --prefix=/foo/bar --summary $1 > output.out
+    ch-test --scope=full --prefix=/foo/bar --summary "$1" > output.out
     echo "$expected_out" > expected.out
     diff -u output.out expected.out
+    rm output.out expected.out
 
-    ch-test -s full -p /foo/bar --summary $1 > output.out
+    ch-test -s full -p /foo/bar --summary "$1" > output.out
     echo "$expected_out" > expected.out
     diff -u output.out expected.out
     rm output.out expected.out
@@ -193,20 +198,84 @@ CH_TEST_PERMDIRS        /foo/bar
 EOF
 )
     unset_vars
-    ch-test --scope=full --prefix=/foo/bar --summary $1 > output.out
-    echo "$output"
+    ch-test --scope=full --prefix=/foo/bar --summary "$1" > output.out
     echo "$expected_out" > expected.out
     diff -u output.out expected.out
+    rm output.out expected.out
 
-    ch-test -s full -p /foo/bar --summary $1 > output.out
-    echo "$output"
+    ch-test -s full -p /foo/bar --summary "$1" > output.out
     echo "$expected_out" > expected.out
     diff -u output.out expected.out
     rm output.out expected.out
 
     # Partial environment, no args
+    expected_out=$(cat << EOF
 
-    # Partial environment, --scope arg
+running tests from:     $testdir
+CH_TEST_SCOPE           standard
+CH_TEST_TARDIR          /foo/bar/tar
+CH_TEST_IMGDIR          /var/tmp/dir
+CH_TEST_PERMDIRS        /var/tmp /tmp
+EOF
+)
+    unset_vars
+    export CH_TEST_TARDIR=/foo/bar/tar
+    ch-test "$1" --summary > output.out
+    echo "$expected_out" > expected.out
+    diff -u output.out expected.out
+
+    # Partial environment, --scope argument
+    expected_out=$(cat << EOF
+
+running tests from:     $testdir
+CH_TEST_SCOPE           full
+CH_TEST_TARDIR          /foo/bar/tar
+CH_TEST_IMGDIR          /var/tmp/dir
+CH_TEST_PERMDIRS        /var/tmp /tmp
+EOF
+)
+    unset_vars
+    export CH_TEST_TARDIR=/foo/bar/tar
+    ch-test "$1" --scope=full --summary > output.out
+    echo "$expected_out" > expected.out
+    diff -u output.out expected.out
+
+    # Partial environment, --prefix argument
+    expected_out=$(cat << EOF
+prefix: warning: CH_TEST_TARDIR set and will be used
+
+running tests from:     $testdir
+CH_TEST_SCOPE           standard
+CH_TEST_TARDIR          /foo/bar/tar
+CH_TEST_IMGDIR          /tmp/dir
+CH_TEST_PERMDIRS        /tmp
+EOF
+)
+    unset_vars
+    export CH_TEST_TARDIR=/foo/bar/tar
+    ch-test "$1" --prefix=/tmp --summary > output.out
+    echo "$expected_out" > expected.out
+    diff -u output.out expected.out
+
+    # Partial environment, --prefix and --scope args
+    expected_out=$(cat << EOF
+prefix: warning: CH_TEST_IMGDIR set and will be used
+
+running tests from:     $testdir
+CH_TEST_SCOPE           quick
+CH_TEST_TARDIR          /tmp/tar
+CH_TEST_IMGDIR          /fizz/buzz/img
+CH_TEST_PERMDIRS        /tmp
+EOF
+)
+    unset_vars
+    export CH_TEST_IMGDIR=/fizz/buzz/img
+    ch-test "$1" -p /tmp -s quick --summary > output.out
+    echo "$expected_out" > expected.out
+    diff -u output.out expected.out
+
+    # Reset CH_TEST environment variables
+    set_vars
 }
 
 @test 'ch-test build' {
@@ -220,49 +289,49 @@ EOF
 @test 'ch-test errors' {
     # No arguments
     run ch-test
-    echo $output
+    echo "$output"
     [[ $output = *'Usage:'* ]]
     [[ $status -eq 1 ]]
 
     # No phase specified
     run ch-test --prefix=foo
-    echo $output
+    echo "$output"
     [[ $output = *'test phase not specified'* ]]
     [[ $status -eq 1 ]]
     run ch-test -p foo -s full
-    echo $output
+    echo "$output"
     [[ $output = *'test phase not specified'* ]]
     [[ $status -eq 1 ]]
 
     # Multiple phases specified
     run ch-test build run
-    echo $output
+    echo "$output"
     [[ $output = *'test phase may only be assigned once'* ]]
     [[ $status -eq 1 ]]
     run ch-test build all
-    echo $output
+    echo "$output"
     [[ $output = *'test phase may only be assigned once'* ]]
     [[ $status -eq 1 ]]
     run ch-test all run
-    echo $output
+    echo "$output"
     [[ $output = *'test phase may only be assigned once'* ]]
     [[ $status -eq 1 ]]
     run ch-test build --prefix=/tmp run
-    echo $output
+    echo "$output"
     [[ $output = *'test phase may only be assigned once'* ]]
     [[ $status -eq 1 ]]
 
     # Malformed arugments
     run ch-test --prefix foo build
-    echo $output
+    echo "$output"
     [[ $status -eq 1 ]]
     run ch-test --scope foo build
-    echo $output
+    echo "$output"
     [[ $status -eq 1 ]]
 }
 
 @test 'ch-test clean' {
-    run ch-test clean
-    echo $output
-    [[ $output = *''* ]]
+    run ch-test clean --summary
+    echo "$output"
+    [[ $output = *"clean targets: $CH_TEST_TARDIR, $CH_TEST_IMGDIR"* ]]
 }
