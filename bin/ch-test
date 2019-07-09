@@ -39,11 +39,17 @@ perm_dirs () {
 }
 
 print_info () {
-    printf '\nrunning tests from:     %s\n' "$testdir"
-    printf 'CH_TEST_SCOPE           %s\n' "$CH_TEST_SCOPE"
-    printf 'CH_TEST_TARDIR          %s\n' "$CH_TEST_TARDIR"
-    printf 'CH_TEST_IMGDIR          %s\n' "$CH_TEST_IMGDIR"
-    echo "CH_TEST_PERMDIRS        ${CH_TEST_PERMDIRS[@]}"
+    if [[ $phase == clean ]]; then
+        printf '\nclean targets: %s, %s, and perms_test subdir in %s\n\n' \
+                "$CH_TEST_TARDIR" "$CH_TEST_IMGDIR" "${CH_TEST_PERMDIRS[*]}"
+    else
+        printf '\nrunning tests from:     %s\n' "$testdir"
+        printf 'CH_TEST_SCOPE           %s\n' "$CH_TEST_SCOPE"
+        printf 'CH_TEST_TARDIR          %s\n' "$CH_TEST_TARDIR"
+        printf 'CH_TEST_IMGDIR          %s\n' "$CH_TEST_IMGDIR"
+        echo "CH_TEST_PERMDIRS        ${CH_TEST_PERMDIRS[*]}"
+    fi
+    [[ -z $summary ]] || exit 0
 }
 
 set_vars () {
@@ -158,55 +164,41 @@ EOF
 )
     fatal "$notest"
 fi
+
+cd "$testdir"   || fatal 'cannot cd into the test directory'
 [[ -n $phase ]] || fatal 'test phase not specified'
 
-if [[ $summary == true ]]; then
-    set_vars
-    print_info
-    exit 0
-fi
+set_vars
+print_info
 
 # Execute phase
 case $phase in
     build)
-        set_vars
-        print_info
         perm_dirs
         make test-build
     ;;
     run)
-        set_vars
-        print_info
         make test-run
     ;;
     examples)
-        set_vars
-        print_info
         make test-test
     ;;
     all)
-        set_vars
-        print_info
         perm_dirs
         make test-build
         make test-run
         make test-test
     ;;
     clean)
-    if [[ -z $summary ]]; then
-        echo "removing CH_TEST_TARDIR ($CH_TEST_TARDIR)..."
+        echo "rm -rf  $CH_TEST_TARDIR"
         rm -rf "$CH_TEST_TARDIR"
-        echo "removing CH_TEST_IMGDIR ($CH_TEST_IMGDIR)..."
+        echo "rm -rf $CH_TEST_IMGDIR"
         rm -rf "$CH_TEST_IMGDIR"
-        echo "removing CH_TEST_PERMDIRS ($CH_TEST_PERMDIRS)..."
         for d in $CH_TEST_PERMDIRS; do
-            [[ ! -d ${d}/perms_test ]] || rm -rf "${d}/perm_dirs"
+            if [[ -d ${d}/perms_test ]]; then
+                echo "rm -rf ${d}/perm_dirs"
+                rm -rf "${d}/perm_test"
+            fi
         done
-    else
-        echo "summary mode: clean phase targets:"
-        echo "$CH_TEST_TARDIR"
-        echo "$CH_TEST_IMGDIR"
-        echo "$CH_TEST_PERMDIRS"
-    fi
     ;;
 esac
