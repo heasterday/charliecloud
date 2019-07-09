@@ -70,7 +70,6 @@ EOF
 prefix: warning: CH_TEST_TARDIR set and will be used
 prefix: warning: CH_TEST_IMGDIR set and will be used
 prefix: warning: CH_TEST_PERMDIRS set and will be used
-prefix: warning: CH_TEST_SCOPE set and will be used
 
 running tests from:     $testdir
 CH_TEST_SCOPE           standard
@@ -117,6 +116,7 @@ EOF
 
     # Environment variable set, --scope argument
     expected_out=$(cat << EOF
+prefix: warning: CH_TEST_SCOPE set and will be used
 
 running tests from:     $testdir
 CH_TEST_SCOPE           quick
@@ -162,10 +162,10 @@ EOF
 
     # Environment variables set, --scope and --prefix args
     expected_out=$(cat << EOF
+prefix: warning: CH_TEST_SCOPE set and will be used
 prefix: warning: CH_TEST_TARDIR set and will be used
 prefix: warning: CH_TEST_IMGDIR set and will be used
 prefix: warning: CH_TEST_PERMDIRS set and will be used
-prefix: warning: CH_TEST_SCOPE set and will be used
 
 running tests from:     $testdir
 CH_TEST_SCOPE           quick

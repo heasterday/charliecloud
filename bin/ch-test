@@ -112,8 +112,6 @@ if [ "$#" -lt 1 ]; then
     usage
 fi
 
-cd "$testdir" || fatal 'cannot cd into the test directory'
-
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     opt=$1; shift
@@ -133,7 +131,6 @@ while [[ $# -gt 0 ]]; do
         check_env 'CH_TEST_TARDIR'   "$CH_TEST_TARDIR"
         check_env 'CH_TEST_IMGDIR'   "$CH_TEST_IMGDIR"
         check_env 'CH_TEST_PERMDIRS' "$CH_TEST_PERMDIRS"
-        check_env 'CH_TEST_SCOPE'    "$CH_TEST_SCOPE"
     ;;
     -s|--scope=*)
         [[ -z $scope ]] || fatal 'scope: assigned more than once'
@@ -142,6 +139,7 @@ while [[ $# -gt 0 ]]; do
         else
             scope=$1; shift
         fi
+        check_env 'CH_TEST_SCOPE' "$CH_TEST_SCOPE"
     ;;
     --summary)
         summary=true
