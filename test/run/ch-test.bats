@@ -43,10 +43,10 @@ EOF
     export CH_TEST_IMGDIR=/tmp/img
     export CH_TEST_SCOPE=quick
     export CH_TEST_PERMDIRS='/tmp /var/tmp'
-    ch-test "$1" --summary > output.out
-    echo "$expected_out" > expected.out
-    diff -u output.out expected.out
-    rm output.out expected.out
+    ch-test "$1" --summary > "${BATS_TMPDIR}/output.out"
+    echo "$expected_out" > "${BATS_TMPDIR}/expected.out"
+    diff -u "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
+    rm "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
 
     # No environment variables, no arguments
     expected_out=$(cat << EOF
@@ -59,10 +59,10 @@ CH_TEST_PERMDIRS        /var/tmp /tmp
 EOF
 )
     unset_vars
-    ch-test "$1" --summary > output.out
-    echo "$expected_out" > expected.out
-    diff -u output.out expected.out
-    rm output.out expected.out
+    ch-test "$1" --summary > "${BATS_TMPDIR}/output.out"
+    echo "$expected_out" > "${BATS_TMPDIR}/expected.out"
+    diff -u "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
+    rm "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
 
 
     # Environment variables set, --prefix argument
@@ -82,14 +82,14 @@ EOF
     export CH_TEST_IMGDIR=/var/tmp/dir
     export CH_TEST_SCOPE=standard
     export CH_TEST_PERMDIRS='/var/tmp /tmp'
-    ch-test --prefix=/tmp/foo --summary "$1"  > output.out
-    echo "$expected_out" > expected.out
-    diff -u output.out expected.out
-    rm output.out expected.out
-    ch-test -p /tmp/foo --summary "$1" > output.out
-    echo "$expected_out" > expected.out
-    diff -u output.out expected.out
-    rm output.out expected.out
+    ch-test --prefix=/tmp/foo --summary "$1"  > "${BATS_TMPDIR}/output.out"
+    echo "$expected_out" > "${BATS_TMPDIR}/expected.out"
+    diff -u "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
+    rm "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
+    ch-test -p /tmp/foo --summary "$1" > "${BATS_TMPDIR}/output.out"
+    echo "$expected_out" > "${BATS_TMPDIR}/expected.out"
+    diff -u "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
+    rm "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
 
 
     # No environment variables, --prefix argument
@@ -103,15 +103,15 @@ CH_TEST_PERMDIRS        /foo/bar
 EOF
 )
     unset_vars
-    ch-test --prefix=/foo/bar --summary "$1" > output.out
-    echo "$expected_out" > expected.out
-    diff -u output.out expected.out
-    rm output.out expected.out
+    ch-test --prefix=/foo/bar --summary "$1" > "${BATS_TMPDIR}/output.out"
+    echo "$expected_out" > "${BATS_TMPDIR}/expected.out"
+    diff -u "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
+    rm "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
 
-    ch-test -p /foo/bar --summary "$1" > output.out
-    echo "$expected_out" > expected.out
-    diff -u output.out expected.out
-    rm output.out expected.out
+    ch-test -p /foo/bar --summary "$1" > "${BATS_TMPDIR}/output.out"
+    echo "$expected_out" > "${BATS_TMPDIR}/expected.out"
+    diff -u "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
+    rm "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
 
 
     # Environment variable set, --scope argument
@@ -129,15 +129,15 @@ EOF
     export CH_TEST_IMGDIR=/foo/bar/dir
     export CH_TEST_SCOPE=quick
     export CH_TEST_PERMDIRS=skip
-    ch-test --scope=full --summary "$1" > output.out
-    echo "$expected_out" > expected.out
-    diff -u output.out expected.out
-    rm output.out expected.out
+    ch-test --scope=full --summary "$1" > "${BATS_TMPDIR}/output.out"
+    echo "$expected_out" > "${BATS_TMPDIR}/expected.out"
+    diff -u "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
+    rm "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
 
-    ch-test -s full --summary "$1" > output.out
-    echo "$expected_out" > expected.out
-    diff -u output.out expected.out
-    rm output.out expected.out
+    ch-test -s full --summary "$1" > "${BATS_TMPDIR}/output.out"
+    echo "$expected_out" > "${BATS_TMPDIR}/expected.out"
+    diff -u "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
+    rm "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
 
     # No environment variables, --scope argument
     expected_out=$(cat << EOF
@@ -150,15 +150,15 @@ CH_TEST_PERMDIRS        /var/tmp /tmp
 EOF
 )
     unset_vars
-    ch-test --scope=full --summary "$1" > output.out
-    echo "$expected_out" > expected.out
-    diff -u output.out expected.out
-    rm output.out expected.out
+    ch-test --scope=full --summary "$1" > "${BATS_TMPDIR}/output.out"
+    echo "$expected_out" > "${BATS_TMPDIR}/expected.out"
+    diff -u "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
+    rm "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
 
-    ch-test -s full --summary "$1" > output.out
-    echo "$expected_out" > expected.out
-    diff -u output.out expected.out
-    rm output.out expected.out
+    ch-test -s full --summary "$1" > "${BATS_TMPDIR}/output.out"
+    echo "$expected_out" > "${BATS_TMPDIR}/expected.out"
+    diff -u "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
+    rm "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
 
     # Environment variables set, --scope and --prefix args
     expected_out=$(cat << EOF
@@ -178,15 +178,15 @@ EOF
     export CH_TEST_IMGDIR=/var/tmp/dir
     export CH_TEST_SCOPE=quick
     export CH_TEST_PERMDIRS='/var/tmp /tmp'
-    ch-test --scope=full --prefix=/foo/bar --summary "$1" > output.out
-    echo "$expected_out" > expected.out
-    diff -u output.out expected.out
-    rm output.out expected.out
+    ch-test --scope=full --prefix=/foo/bar --summary "$1" > "${BATS_TMPDIR}/output.out"
+    echo "$expected_out" > "${BATS_TMPDIR}/expected.out"
+    diff -u "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
+    rm "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
 
-    ch-test -s full -p /foo/bar --summary "$1" > output.out
-    echo "$expected_out" > expected.out
-    diff -u output.out expected.out
-    rm output.out expected.out
+    ch-test -s full -p /foo/bar --summary "$1" > "${BATS_TMPDIR}/output.out"
+    echo "$expected_out" > "${BATS_TMPDIR}/expected.out"
+    diff -u "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
+    rm "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
 
     # No environment variables, --scope and --prefix args
     expected_out=$(cat << EOF
@@ -199,15 +199,15 @@ CH_TEST_PERMDIRS        /foo/bar
 EOF
 )
     unset_vars
-    ch-test --scope=full --prefix=/foo/bar --summary "$1" > output.out
-    echo "$expected_out" > expected.out
-    diff -u output.out expected.out
-    rm output.out expected.out
+    ch-test --scope=full --prefix=/foo/bar --summary "$1" > "${BATS_TMPDIR}/output.out"
+    echo "$expected_out" > "${BATS_TMPDIR}/expected.out"
+    diff -u "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
+    rm "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
 
-    ch-test -s full -p /foo/bar --summary "$1" > output.out
-    echo "$expected_out" > expected.out
-    diff -u output.out expected.out
-    rm output.out expected.out
+    ch-test -s full -p /foo/bar --summary "$1" > "${BATS_TMPDIR}/output.out"
+    echo "$expected_out" > "${BATS_TMPDIR}/expected.out"
+    diff -u "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
+    rm "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
 
     # Partial environment, no args
     expected_out=$(cat << EOF
@@ -221,10 +221,10 @@ EOF
 )
     unset_vars
     export CH_TEST_TARDIR=/foo/bar/tar
-    ch-test "$1" --summary > output.out
-    echo "$expected_out" > expected.out
-    diff -u output.out expected.out
-    rm output.out expected.out
+    ch-test "$1" --summary > "${BATS_TMPDIR}/output.out"
+    echo "$expected_out" > "${BATS_TMPDIR}/expected.out"
+    diff -u "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
+    rm "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
 
     # Partial environment, --scope argument
     expected_out=$(cat << EOF
@@ -238,10 +238,10 @@ EOF
 )
     unset_vars
     export CH_TEST_TARDIR=/foo/bar/tar
-    ch-test "$1" --scope=full --summary > output.out
-    echo "$expected_out" > expected.out
-    diff -u output.out expected.out
-    rm output.out expected.out
+    ch-test "$1" --scope=full --summary > "${BATS_TMPDIR}/output.out"
+    echo "$expected_out" > "${BATS_TMPDIR}/expected.out"
+    diff -u "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
+    rm "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
 
     # Partial environment, --prefix argument
     expected_out=$(cat << EOF
@@ -256,10 +256,10 @@ EOF
 )
     unset_vars
     export CH_TEST_TARDIR=/foo/bar/tar
-    ch-test "$1" --prefix=/tmp --summary > output.out
-    echo "$expected_out" > expected.out
-    diff -u output.out expected.out
-    rm output.out expected.out
+    ch-test "$1" --prefix=/tmp --summary > "${BATS_TMPDIR}/output.out"
+    echo "$expected_out" > "${BATS_TMPDIR}/expected.out"
+    diff -u "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
+    rm "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
 
     # Partial environment, --prefix and --scope args
     expected_out=$(cat << EOF
@@ -274,10 +274,10 @@ EOF
 )
     unset_vars
     export CH_TEST_IMGDIR=/fizz/buzz/img
-    ch-test "$1" -p /tmp -s quick --summary > output.out
-    echo "$expected_out" > expected.out
-    diff -u output.out expected.out
-    rm output.out expected.out
+    ch-test "$1" -p /tmp -s quick --summary > "${BATS_TMPDIR}/output.out"
+    echo "$expected_out" > "${BATS_TMPDIR}/expected.out"
+    diff -u "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
+    rm "${BATS_TMPDIR}/output.out" "${BATS_TMPDIR}/expected.out"
 
     # Reset CH_TEST environment variables
     set_vars
