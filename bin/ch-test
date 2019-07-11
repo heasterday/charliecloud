@@ -5,9 +5,24 @@ libexec="$(cd "$(dirname "$0")" && pwd)"
 . "${libexec}/version.sh"
 
 check_env () {
-    if [[ -n $2 ]]; then
-        printf "prefix: warning: %s set and will be used\n" "$1"
+    local var=$1
+    local default=$2
+    local arg=$3
+    if [[ -n ${!var} ]]; then
+        export "$var"="${!var}"
+    else
+        if [[ $var = CH_TEST_SCOPE ]]; then
+                check=scope
+        else
+            check=prefix
+        fi
+        if [[ -n ${!check} ]]; then
+            export "$var"="$arg"
+        else
+            export "$var"="$default"
+        fi
     fi
+    printf '%s\t\t%s\n' "$var"  "${!var}"
 }
 
 fatal () {
@@ -16,25 +31,19 @@ fatal () {
 }
 
 perm_dirs () {
-    # TODO: skip if user can't sudo
-    [[ ! $CH_TEST_PERMDIRS = 'skip' ]] || return 0
+    if [[ -z $ch_have_sudo ]] \
+    || [[ $CH_TEST_PERMDIRS = 'skip' ]] \
+    || [[ -n $CH_TEST_DONT_SUDO ]]; then
+        return 0
+    fi
     printf '\nFile permission enforcement tests:\n'
     for d in $CH_TEST_PERMDIRS; do
-        if [[ -d $d ]]; then
-            # prevent the test suite from failing if the perm_dirs directory
-            # exists
-            if [[ -d "${d}/perms_test" ]]; then
-                printf "%s/perms_test exists. removing...\n" "$d"
-                sudo rm -rf "${d}/perms_test"
-            fi
+        if [[ -d "${d}/perms_test" ]]; then
+            printf "%s/perms_test exists. skipping...\n" "$d"
+            continue
         else
-            echo "permission directory target $d doesn't exist, creating it..."
-            mkdir -p "$d"
+            sudo ./make-perms-test "$d" "$USER" nobody
         fi
-    done
-    echo
-    for d in $CH_TEST_PERMDIRS; do
-        sudo ./make-perms-test "$d" "$USER" nobody
     done
 }
 
@@ -45,19 +54,9 @@ version=$(version 2>&1)
 if [[ -d "${topdir}/test" ]]; then
     # local install
     testdir=${topdir}/test
-
-# prefix installation
-elif [[ -d ${topdir}/libexec/charliecloud-${version} ]]; then
+else
     # prefix installation
-    testdir=${topdir}/libexec/charliecloud-${version}
-
-# If you run ch-test with `./bin/ch-run` while your PWD is charliecloud/test,
-# the symlink from bin to ../../../bin messes with the ch_bin variable from
-# base.sh. We check if we are inside the test directory to avoid this.
-elif [[ ${PWD##*/} == test ]] \
-    && [[ -d run ]] \
-    && [[ -e make-auto ]]; then
-    testdir=$PWD
+    testdir=${topdir%/charliecloud}/libexec/charliecloud-${version}
 fi
 
 # shellcheck disable=SC2034
@@ -83,89 +82,59 @@ while [[ $# -gt 0 ]]; do
     opt=$1; shift
     case $opt in
     build|run|examples|all|clean)
-        [[ -z $phase ]] || fatal 'test phase may only be assigned once'
+        [[ -z $phase ]] || fatal 'phase: assigned more than once'
         phase=$opt
-    ;;
-    -p|--prefix=*)
+        ;;
+    -p|--prefix)
         [[ -z $prefix ]] || fatal 'prefix: assigned more than once'
-        if [[ $opt == '--prefix='* ]]; then
-            prefix=${opt##*=}  # remove '--prefix='
-            [[ -n $prefix ]] || fatal "prefix: invalid argument $opt"
-        else
-            prefix=$1; shift
-        fi
-        check_env 'CH_TEST_TARDIR'   "$CH_TEST_TARDIR"
-        check_env 'CH_TEST_IMGDIR'   "$CH_TEST_IMGDIR"
-        check_env 'CH_TEST_PERMDIRS' "$CH_TEST_PERMDIRS"
-    ;;
-    -s|--scope=*)
+        prefix=$1; shift
+        ;;
+    -s|--scope)
         [[ -z $scope ]] || fatal 'scope: assigned more than once'
-        if [[ $opt = '--scope='* ]]; then
-            scope=${opt##*=}  # remove '--scope='
-        else
-            scope=$1; shift
-        fi
-        check_env 'CH_TEST_SCOPE' "$CH_TEST_SCOPE"
-    ;;
-    --summary)
-        summary=true
-    ;;
+        scope=$1; shift
+        ;;
+    --dry-run)
+        dry=true
+        ;;
     *)
         fatal "unrecognized argument: $opt"
     esac
 done
 
 # Sanity check
-if [[ ! -d $testdir ]]; then
-    notest=$(cat << EOF
-Unable to locate the Charliecloud test suite. This is usually due to the
-following:
+[[ -d $testdir ]] || fatal "Unable to locate the Charliecloud test suite."
+cd "$testdir"     || fatal 'cannot cd into the test directory'
+[[ -n $phase ]]   || fatal 'test phase not specified'
 
-    1. No suitable python version was detected during make install; or
-    2. Charliecloud was installed via yum (epel) without the test package
-       (yum install charliecloud-test)
-EOF
-)
-    fatal "$notest"
-fi
+printf 'running tests from:\t%s\n' "$testdir"
 
-cd "$testdir"   || fatal 'cannot cd into the test directory'
-[[ -n $phase ]] || fatal 'test phase not specified'
+check_env CH_TEST_TARDIR   '/var/tmp/tar'  "${prefix}/tar"
+check_env CH_TEST_IMGDIR   '/var/tmp/dir'  "${prefix}/dir"
+check_env CH_TEST_PERMDIRS '/var/tmp /tmp' "$prefix"
+check_env CH_TEST_SCOPE    'standard'      "$scope"
 
-# Set environment
-[[ -n $prefix ]]         || prefix=/var/tmp
-[[ -n $scope ]]          || scope=standard
-[[ -n $CH_TEST_TARDIR ]] || export CH_TEST_TARDIR=${prefix}/tar
-[[ -n $CH_TEST_IMGDIR ]] || export CH_TEST_IMGDIR=${prefix}/dir
-[[ -n $CH_TEST_SCOPE ]]  || export CH_TEST_SCOPE=$scope
-
-if [[ -z $CH_TEST_PERMDIRS ]]; then
-    if [[ $prefix == /var/tmp ]]; then
-        export CH_TEST_PERMDIRS="/var/tmp /tmp" # default
-    else
-        export CH_TEST_PERMDIRS="$prefix"
-    fi
-fi
-
-# Avoid cryptic bats error (#347) that occurs when setting a CH_TEST variable
-# to a path where there are two or more directories that do not exist.
-if [[ -z $summary ]]; then
+if [[ -z $dry ]]; then
+    # Avoid cryptic bats error (#347) that occurs when setting a CH_TEST
+    # variable to a path where there are two or more directories that do not
+    # exist.
     [[ -d $CH_TEST_TARDIR ]] || mkdir -p "$CH_TEST_TARDIR"
     [[ -d $CH_TEST_IMGDIR ]] || mkdir -p "$CH_TEST_IMGDIR"
-fi
-
-# Print test summary
-if [[ $phase == clean ]]; then
-    printf '\nclean targets: %s, %s, and perms_test subdir in %s\n\n' \
-            "$CH_TEST_TARDIR" "$CH_TEST_IMGDIR" "${CH_TEST_PERMDIRS[*]}"
 else
-    printf '\nrunning tests from:     %s\n' "$testdir"
-    printf 'CH_TEST_SCOPE           %s\n' "$CH_TEST_SCOPE"
-    printf 'CH_TEST_TARDIR          %s\n' "$CH_TEST_TARDIR"
-    printf 'CH_TEST_IMGDIR          %s\n' "$CH_TEST_IMGDIR"
-    echo "CH_TEST_PERMDIRS        ${CH_TEST_PERMDIRS[*]}"
+    if [[ $phase = clean ]]; then
+        printf 'rm -rf "$CH_TEST_TARDIR"\nrm -rf "$CH_TEST_IMGDIR"\n'
+    else
+        if [[ ! $phase  = run ]]; then
+            printf 'for d in %s do;\n'
+            printf '\tsudo ./make-perms-test "$d" "$USER" nobody;\ndone\n'
+        fi
+        case $phase in
+        build) echo "make test-build";;
+        run)   echo "make test-run";;
+        all)   echo "make test";;
+        esac
+    fi
+    exit 0
 fi
-[[ -z $summary ]] || exit 0
 
 # Execute phase
 case $phase in
@@ -181,20 +150,12 @@ case $phase in
     ;;
     all)
         perm_dirs
-        make test-build
-        make test-run
-        make test-test
+        make test
     ;;
     clean)
         echo "rm -rf  $CH_TEST_TARDIR"
         rm -rf "$CH_TEST_TARDIR"
         echo "rm -rf $CH_TEST_IMGDIR"
         rm -rf "$CH_TEST_IMGDIR"
-        for d in $CH_TEST_PERMDIRS; do
-            if [[ -d ${d}/perms_test ]]; then
-                echo "rm -rf ${d}/perm_dirs"
-                rm -rf "${d}/perm_test"
-            fi
-        done
     ;;
 esac

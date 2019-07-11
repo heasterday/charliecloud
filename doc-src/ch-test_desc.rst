@@ -32,20 +32,22 @@ of the prior phase at the same scope.
 Clean-up phase:
 
   :code:`clean`
-    Delete all test data, including in builder storage.
+    Delete test data in directories :code:`$CH_TEST_TARDIR`,
+    :code:`$CH_TEST_IMGDIR`, and :code:`$CH_TEST_PERMDIRS`. Note image builder
+    data is not altered or removed.
 
 Other arguments:
 
-  :code:`-p`, :code:`--prefix=DIR`
+  :code:`-p`, :code:`--prefix DIR`
     Directory containing image files/directories and other test fixtures if
     the relevant environment variables are not set. Default: :code:`/var/tmp`.
 
-  :code:`-s`, :code:`--scope=[quick|standard|full]`
+  :code:`-s`, :code:`--scope [quick|standard|full]`
     Run tests with given scope. Default: :code:`$CH_TEST_SCOPE` if set,
     otherwise :code:`standard`.
 
-  :code:`--summary`
-    Print the test suite variables or clearn targets without executing phase.
+  :code:`--dry-run`
+    Print test suite phase details without executing.
 
 Storage
 =======
@@ -59,7 +61,8 @@ The test suite requires a few tens of GB of storage for test fixtures:
 * Image directories: :code:`{--prefix}/dir` or :code:`$CH_TEST_IMGDIR` if set.
 
 * File permission enforcement fixtures: :code:`{--prefix}/perms_test` or
-  :code:`$CH_TEST_PERMDIRS` if set.
+  :code:`$CH_TEST_PERMDIRS` if set. Note file permissions tests require
+  :code `sudo`.
 
 All of these directories are created if they don't exist.
 
